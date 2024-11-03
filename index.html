@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<title>Sliepka kurnikova</title>
+
+<link rel="icon" type="image/png" href="sliepka1.png">
+
+<!-- Toto je HTML -->
+
+<style>
+/* Toto je CSS */
+body {
+  font-family: Arial;
+  background-color: black;
+  color: white;
+}
+h1 {
+  text-shadow: 4px 4px 8px red;
+  color: white;
+}
+#obal-hracej-plochy {
+  padding: 20px;
+  margin: 10px;
+  border: 1px dashed blue;
+  position: relative;
+  width: 600px;
+}
+#hracia-plocha {
+  width: 600px;
+  height: 422px;
+  background: center no-repeat url(kurnik1.webp);
+  position: relative;
+  user-select: none;
+}
+#start-menu, #obal-informacia {
+  width: 600px;
+  height: 422px;
+  background-color: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  margin: 20px;
+  text-align: center;
+  align-content: center;  
+  user-select: none;
+}
+#obal-informacia {
+  text-shadow: 1px 1px 2px black;
+  cursor: pointer;
+  visibility: hidden;
+  font-size: 24px;
+  font-weight: bold;
+}
+#obal-informacia.vyhra {
+  background-color: rgba(0, 255, 0, 0.6);
+}
+#obal-informacia.prehra {
+  background-color: rgba(255, 0, 0, 0.6);
+}
+#ciel {
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  cursor: pointer;
+}
+#vybuch {
+  display: none;
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  width: 80px; 
+  height: 80px;
+}
+#sliepka {
+  padding: 4px;
+}
+#obal-skore {
+  font-size: 32px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+input[type="button"] {
+  width: 200px;
+  height: 32px;
+  font-size: 20px;
+  ont-weight: bold;
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  box-shadow: 0px 0px 4px white;
+  cursor: pointer;
+}
+#stop-tlacitko {
+  width: 48px;
+  background-color: navy;
+  opacity: 0.7;
+  border-radius: 15px;
+}
+</style>
+
+<h1>🐔 Sliepka kurnikova 🐔</h1>
+
+<div id="obal-hracej-plochy">
+  <div id="hracia-plocha">
+    <div id="ciel">
+	  <img id="sliepka" src="sliepka1.png"/>
+	  <img id="vybuch" src="vybuch1.png"/>
+	</div>
+  </div>
+  <div id="start-menu">
+	<input id="start-tlacitko" type="button" value="Start" onclick="startHry()">
+  </div>
+  <div id="obal-informacia">
+    <span id="informacia"></div>
+  </div>
+  <div id="obal-skore">
+	Skore: <span id="skore">0</span>
+	Cas: <span id="cas">0</span>
+  </div>
+</div>
+
+<input id="stop-tlacitko" type="button" value="⟳" onclick="stopHry()">
+
+<script>
+// Toto je Javascript.
+
+const ciel = document.querySelector('#ciel');
+const startMenu = document.querySelector('#start-menu');
+const vybuch = document.querySelector('#vybuch');
+const skoreText = document.querySelector('#skore');
+const casText = document.querySelector('#cas');
+const informacia = document.querySelector('#obal-informacia');
+const informaciaText = document.querySelector('#informacia');
+
+if (ciel !== null) {
+  console.log('Ciel najdeny');
+} else {
+  alert('❌ Problem: Ciel nenajdeny! Nemozem pokracovat');
+  throw new Error('Fatalny problem');
+}
+
+const sirka = 600;
+const vyska = 422;
+const velkostX = 40;
+const velkostY = 40;
+let skore = 0;
+let level = 1;
+let posunX = 0;
+let posunY = 0;
+let poziciaX = 0;
+let poziciaY = 0;
+let stopky = 600;
+
+let intervalId;
+let hraBezi = false;
+
+function nastavPoziciu() {
+  ciel.style.left = poziciaX + 'px';
+  ciel.style.top = poziciaY + 'px';
+}
+
+nastavPoziciu();
+
+function zobrazInformaciu(text) {
+  informaciaText.innerText = text;
+  informacia.style.visibility = 'visible';
+  zastavHru();
+}
+
+function schovajInformaciu() {
+  informacia.style.visibility = '';
+  if (hraBezi) {
+	pokracujHru();
+  } else {
+    stopHry();
+  }
+}
+
+informacia.addEventListener('click', schovajInformaciu);
+
+function posunCiel() {
+  poziciaX += posunX;
+  if (poziciaX > sirka - velkostX) {
+	poziciaX = sirka - velkostX;
+	posunX = -posunX;
+  }  
+  if (poziciaX < 0) {
+	poziciaX = 0;
+	posunX = -posunX;
+  }  
+  poziciaY += posunY;
+  if (poziciaY > vyska - velkostY) {
+	poziciaY = vyska - velkostY;
+	posunY = -posunY;
+  }
+  if (poziciaY < 0) {
+	poziciaY = 0;
+	posunY = -posunY;
+  } 
+  nastavPoziciu();
+  zmenCas();  
+}
+
+function ukazSkore() {
+  skoreText.innerText = skore;
+}
+
+function ukazCas() {
+  casText.innerText = stopky;
+}
+
+function zmenCas() { 
+  stopky -= 1.0; 
+  ukazCas();
+  if (stopky <= 0.0) {
+    stopky = 0;
+	zastavHru();
+    setTimeout(koniecHry, 100);
+  }
+}
+
+function koniecHry() {
+  hraBezi = false;
+  informacia.classList = ['prehra'];
+  zobrazInformaciu('👎 Prehral si! Sliepka utiekla 🐔');
+}
+
+function dajRychlost(level) {
+  return 1.0 + (level - 1) / 10;
+}
+
+function novyLevel() {
+  stopky = 600;
+  if (level === 1 ) {
+    poziciaX = 0;
+	poziciaY = 0;
+	posunX = 1;
+	posunY = 1;
+	return;
+  }
+  // Presun kocku na nahodnu poziciu;
+  poziciaX = Math.random() * (sirka - velkostX);
+  poziciaY = Math.random() * (vyska - velkostY);
+  // Nastav posun podla levelu (vacsia rychlost)
+  // Zvol nahodny smer.
+  if (Math.random() < 0.5) {
+	posunX = dajRychlost(level);
+  } else {
+    posunX = -dajRychlost(level);
+  }
+  if (Math.random() < 0.5) {
+	posunY = dajRychlost(level);
+  } else {
+    posunY = -dajRychlost(level);
+  }
+  nastavPoziciu();
+}
+
+function kliknutieNaCiel() {
+  console.log('Klik');
+  skore += stopky * level;
+  ukazSkore();
+  level++;
+  vybuch.style.display = 'block';
+  setTimeout(() => {
+    informacia.classList = ['vyhra'];
+	zobrazInformaciu('🎉 Vyhra - postupujes do levelu ' + level + ' 👍');
+    vybuch.style.display = 'none';  
+    novyLevel();
+  }, 100);
+}
+
+function startHry() {
+  hraBezi = true;
+  startMenu.style.visibility = 'hidden';
+  level = 1;
+  skore = 0;
+  ukazSkore();
+  novyLevel();
+  pokracujHru();
+}
+
+function pokracujHru() {
+  ciel.style.visibility = '';
+  ciel.addEventListener("click", kliknutieNaCiel);
+  // Ak hra bola spustena, tak sa odregistruje povodny program.
+  if (intervalId) {
+    console.log('Odregistovam hru');
+    clearInterval(intervalId);
+  }
+  // Zmen poziciu 60-krat za sekundu.
+  intervalId = setInterval(posunCiel, 1000 / 60 /* millisekundy */);
+}
+
+function zastavHru() {
+  ciel.removeEventListener("click", kliknutieNaCiel);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+  intervalId = undefined;
+  ciel.style.visibility = 'hidden';
+}
+
+function stopHry() {
+  zastavHru();
+  // Zobraz menu.
+  startMenu.style.visibility = '';  
+}
+
+
+</script>
